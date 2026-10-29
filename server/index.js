@@ -1,11 +1,15 @@
 import 'dotenv/config';
 import express from 'express';
 import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createApp } from './app.js';
 import { createPool } from './db.js';
 
 const pool = createPool();
+const schema = await readFile(new URL('./schema.sql', import.meta.url), 'utf8');
+await pool.query(schema);
+console.log('Database schema is up to date.');
 const app = createApp({ pool });
 const dist = resolve('dist');
 
