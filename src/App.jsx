@@ -200,9 +200,17 @@ function ContactCard({ contact, onStar }) {
   </article>;
 }
 
-function ContactForm({ initial = EMPTY_CONTACT, onSubmit, submitLabel, errors = {}, busy }) {
-  const [values, setValues] = useState({ ...EMPTY_CONTACT, ...initial });
+function ContactForm({ initial = EMPTY_CONTACT, tags = [], onSubmit, submitLabel, errors = {}, busy }) {
+  const [values, setValues] = useState({
+    ...EMPTY_CONTACT,
+    ...initial,
+    tagIds: initial.tagIds || initial.tags?.map((tag) => tag.id) || [],
+  });
   function update(key, value) { setValues({ ...values, [key]: value }); }
+  function toggleTag(tagId, checked) {
+    const current = values.tagIds || [];
+    update('tagIds', checked ? [...current, tagId] : current.filter((id) => id !== tagId));
+  }
   return <form className="form-card card" onSubmit={(event) => { event.preventDefault(); onSubmit(values); }} noValidate>
     <div className="form-grid">
       <Field label="Name *" error={errors.name} className="wide"><input value={values.name} onChange={(e) => update('name', e.target.value)} maxLength="120" autoFocus required /></Field>
@@ -211,6 +219,12 @@ function ContactForm({ initial = EMPTY_CONTACT, onSubmit, submitLabel, errors = 
       <Field label="How or where did you meet?" className="wide"><input value={values.howMet || ''} onChange={(e) => update('howMet', e.target.value)} maxLength="300" placeholder="Haas event, introduction, class…" /></Field>
       <Field label="Date met" error={errors.metOn}><input type="date" max={today()} value={values.metOn || ''} onChange={(e) => update('metOn', e.target.value)} /></Field>
       <Field label="Next follow-up" error={errors.nextFollowUpOn}><input type="date" value={values.nextFollowUpOn || ''} onChange={(e) => update('nextFollowUpOn', e.target.value)} /></Field>
+      <fieldset className="tag-picker wide">
+        <legend>Tags</legend>
+        <p>Select any groups that describe this relationship. You can change them later.</p>
+        {tags.length ? <div className="tag-picker-options">{tags.map((tag) => <label key={tag.id}><input type="checkbox" checked={values.tagIds.includes(tag.id)} onChange={(event) => toggleTag(tag.id, event.target.checked)} /><span>{tag.name}</span></label>)}</div>
+          : <p className="tag-picker-empty">No tags yet. <Link to="/tags">Create a reusable tag</Link> before adding this contact if you want to group it.</p>}
+      </fieldset>
       <Field label="Relationship notes" className="wide" hint="Keep sensitive or confidential information out of demo entries."><textarea rows="6" maxLength="2000" value={values.notes || ''} onChange={(e) => update('notes', e.target.value)} placeholder="Context worth remembering for the next conversation…" /></Field>
     </div>
     <div className="form-actions"><Link className="button ghost" to={initial.id ? `/contacts/${initial.id}` : '/contacts'}>Cancel</Link><button className="button primary" disabled={busy}>{busy ? 'Saving…' : submitLabel}</button></div>
@@ -220,20 +234,33 @@ function ContactForm({ initial = EMPTY_CONTACT, onSubmit, submitLabel, errors = 
 function ContactEditor() {
   const { id } = useParams();
   const editing = Boolean(id);
-  const [contact, setContact] = useState(editing ? null : EMPTY_CONTACT);
+  const [contact, setContact] = useState(null);
+  const [tags, setTags] = useState([]);
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
-  useEffect(() => { if (editing) api(`/contacts/${id}`).then((data) => setContact({ ...data.contact, howMet: data.contact.how_met, metOn: String(data.contact.met_on || '').slice(0, 10), nextFollowUpOn: String(data.contact.next_follow_up_on || '').slice(0, 10) })).catch((e) => setMessage(e.message)); }, [id]);
+  useEffect(() => {
+    const contactRequest = editing ? api(`/contacts/${id}`) : Promise.resolve({ contact: EMPTY_CONTACT });
+    Promise.all([contactRequest, api('/tags')]).then(([contactData, tagData]) => {
+      const saved = contactData.contact;
+      setContact({ ...saved, howMet: saved.how_met || saved.howMet, metOn: String(saved.met_on || saved.metOn || '').slice(0, 10), nextFollowUpOn: String(saved.next_follow_up_on || saved.nextFollowUpOn || '').slice(0, 10), tagIds: saved.tags?.map((tag) => tag.id) || [] });
+      setTags(tagData.tags);
+    }).catch((e) => setMessage(e.message));
+  }, [id, editing]);
   async function save(values) {
     setErrors({}); setMessage(''); setBusy(true);
-    try { const data = await api(editing ? `/contacts/${id}` : '/contacts', { method: editing ? 'PATCH' : 'POST', body: values }); navigate(`/contacts/${data.contact.id}`); }
+    try {
+      const { tagIds = [], ...contactValues } = values;
+      const data = await api(editing ? `/contacts/${id}` : '/contacts', { method: editing ? 'PATCH' : 'POST', body: contactValues });
+      await api(`/contacts/${data.contact.id}/tags`, { method: 'PUT', body: { tagIds } });
+      navigate(`/contacts/${data.contact.id}`);
+    }
     catch (e) { setErrors(e.errors || {}); setMessage(e.message); }
     finally { setBusy(false); }
   }
   if (!contact && !message) return <Loading />;
-  return <div className="narrow stack-lg">{message && <div className="alert error">{message}</div>}{contact && <ContactForm initial={contact} onSubmit={save} errors={errors} busy={busy} submitLabel={editing ? 'Save changes' : 'Add contact'} />}</div>;
+  return <div className="narrow stack-lg">{message && <div className="alert error">{message}</div>}{contact && <ContactForm initial={contact} tags={tags} onSubmit={save} errors={errors} busy={busy} submitLabel={editing ? 'Save changes' : 'Add contact'} />}</div>;
 }
 
 function ContactDetail() {
