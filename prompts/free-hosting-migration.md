@@ -1,0 +1,3 @@
+# Free hosting migration prompt
+
+Convert Contact Cadence from a paid, always-running Replit Express deployment to a no-charge architecture suitable for the class demo. Preserve signup/login, per-user privacy, contacts, interactions, stars, search/filter/sort, dashboard, follow-up reminders, tags, and CSV export. Use a static React/Vite frontend on GitHub Pages and Supabase Free for authentication and PostgreSQL. Enforce ownership with Row Level Security, keep the original plan unchanged, document the Plan vs. Reality change, and add a GitHub Actions Pages deployment workflow. Do not commit credentials or real contact data.

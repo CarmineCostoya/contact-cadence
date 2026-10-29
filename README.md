@@ -2,56 +2,62 @@
 
 Contact Cadence is a private relationship tracker for remembering professional contacts, recording interactions, and planning thoughtful follow-ups.
 
-**Live app:** Add the Replit deployment URL after publishing.
+**Live app:** `https://carminecostoya.github.io/contact-cadence/` after GitHub Pages is enabled.
 
 ## What it does
 
 - Email/password signup, login, logout, and account-specific data
 - Contact create, list, detail, edit, and confirmed deletion
-- Dated interaction timeline for meetings, coffee chats, calls, messages, emails, and events
-- Stars and a starred-only view
-- Search, follow-up filters, tag filters, and sorting
-- Dashboard with three summary statistics and a six-month chart
+- Dated interaction history for meetings, coffee chats, calls, messages, emails, and events
+- Stars, search, follow-up filters, tag filters, and sorting
+- Dashboard statistics and a six-month interaction chart
 - In-app overdue, due-today, and upcoming follow-up queue
-- Reusable tags and safe CSV export
+- Reusable tags and spreadsheet-safe CSV export
 
-## Technology
+## Free architecture
 
-The React/Vite frontend calls an Express JSON API. Express stores data in PostgreSQL using parameterized SQL. Passwords are hashed with bcrypt, and login sessions use secure HTTP-only cookies backed by PostgreSQL. Recharts renders the dashboard chart. Vitest and Supertest exercise the API.
+The app is a static React/Vite site hosted on GitHub Pages. Supabase Free provides authentication and PostgreSQL. Row Level Security (RLS) policies in [`supabase/schema.sql`](./supabase/schema.sql) ensure each signed-in user can access only their own data. There is no paid Replit deployment or always-running server.
+
+GitHub Pages and Supabase both have free-plan usage limits. Supabase may pause an inactive free project, so open the app and wake the project before a class demo.
+
+## Configure Supabase
+
+1. Create a Supabase Free project.
+2. Open its SQL Editor and run all of [`supabase/schema.sql`](./supabase/schema.sql).
+3. In Authentication settings, disable email confirmation for the classroom demo, or keep it enabled and confirm each signup by email.
+4. Copy `.env.example` to `.env` and add the project URL and public anon key.
+5. Never add a service-role key to this frontend or to the repository.
 
 ## Run locally
 
-1. Install Node.js 20 or newer and PostgreSQL.
-2. Copy `.env.example` to `.env` and set `DATABASE_URL` and a long random `SESSION_SECRET`.
-3. Run `npm install`.
-4. Run `npm run db:migrate`.
-5. Run `npm run dev`.
-6. Open `http://localhost:5173`.
+```bash
+pnpm install
+pnpm dev
+```
+
+Open the URL Vite prints, normally `http://localhost:5173/contact-cadence/`.
 
 ## Test and build
 
 ```bash
-npm test
-npm run build
+pnpm test
+pnpm build
 ```
 
-The two required tests prove that one user cannot access another user's contact and that the dashboard counts current-month interactions correctly.
+The automated tests check the dashboard month calculation and verify that all private database tables have RLS ownership policies. Before submission, also complete the two-account isolation test against the deployed Supabase project.
 
-## Deploy on Replit
+## Deploy free on GitHub Pages
 
-1. Import this GitHub repository into a new Replit App.
-2. Open the Replit Database tool and provision PostgreSQL.
-3. Add `SESSION_SECRET` in Replit Secrets. Replit supplies `DATABASE_URL`.
-4. Run `npm run db:migrate` against the development database.
-5. Confirm the development app works, then publish with build command `npm run build` and run command `npm start`.
-6. Run the migration against the production database before the first production smoke test.
-7. Add the deployed URL above and test signup, refresh persistence, logout, and a second user's data isolation.
+1. In the GitHub repository, add Actions variables named `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+2. In **Settings → Pages**, choose **GitHub Actions** as the source.
+3. Merge through a pull request into `main`. The included workflow tests, builds, and deploys the site.
+4. Test signup, refresh persistence, logout, and two-account data isolation on the live URL.
 
 ## Project documentation
 
-- [`PLAN.md`](./PLAN.md) contains the original blueprint and Plan vs. Reality table.
-- [`schema.md`](./schema.md) explains every table and relationship.
-- [`prompts/`](./prompts/) records the feature prompts used with the coding agent.
-- [`TEST_EVIDENCE.md`](./TEST_EVIDENCE.md) explains the required tests and the red/green evidence still needed in the pull request descriptions.
+- [`PLAN.md`](./PLAN.md) preserves the original blueprint and records the hosting change in Plan vs. Reality.
+- [`schema.md`](./schema.md) explains the database and privacy rules.
+- [`prompts/`](./prompts/) records feature prompts used with the coding agent.
+- [`TEST_EVIDENCE.md`](./TEST_EVIDENCE.md) documents the required test evidence.
 
-Real contact data is entered only through the deployed interface. It is never stored in this public repository.
+Real contact data is entered only through the deployed interface and is never committed to this public repository.

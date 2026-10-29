@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { api } from './api.js';
+import { api, exportContactsCsv } from './api.js';
 
 const today = () => {
   const date = new Date();
@@ -183,7 +183,7 @@ function Contacts() {
         <label><span>Tag</span><select value={query.tag} onChange={(e) => setQuery({ ...query, tag: e.target.value })}><option value="">All tags</option>{tags.map((tag) => <option key={tag.id} value={tag.id}>{tag.name}</option>)}</select></label>
         <label><span>Sort</span><select value={query.sort} onChange={(e) => setQuery({ ...query, sort: e.target.value })}><option value="recent">Recently added</option><option value="name">Name A–Z</option><option value="lastInteraction">Last interaction</option><option value="followup">Next follow-up</option></select></label>
       </div>
-      <a className="button secondary" href="/api/export/contacts.csv">⇩ Export CSV</a>
+      <button className="button secondary" type="button" onClick={() => exportContactsCsv().catch((e) => setError(e.message))}>⇩ Export CSV</button>
     </section>
     {error ? <EmptyState title="Could not load contacts" body={error} /> : loading ? <Loading /> : contacts.length ? <section className="contact-grid">{contacts.map((contact) => <ContactCard key={contact.id} contact={contact} onStar={() => toggleStar(contact)} />)}</section> : <EmptyState title={query.search || query.filter !== 'all' || query.tag ? 'No contacts match' : 'Your directory is empty'} body={query.search || query.filter !== 'all' || query.tag ? 'Try clearing a search or filter.' : 'Add your first contact to start remembering the details that matter.'} action={<Link className="button primary" to="/contacts/new">Add contact</Link>} />}
   </div>;

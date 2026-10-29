@@ -69,13 +69,13 @@ Do not rewrite the original plan. Complete this table after the final feature an
 
 | Planned feature | Shipped / Changed / Cut | Status (Done/Backlogged) | Learning | What changed and why |
 |---|---|---|---|---|
-| Accounts and privacy |  |  |  |  |
-| Contact CRUD |  |  |  |  |
-| Interaction history |  |  |  |  |
-| Validation |  |  |  |  |
-| Stars |  |  |  |  |
-| Find and organize |  |  |  |  |
-| Dashboard |  |  |  |  |
-| Follow-up reminders |  |  |  |  |
-| Tags |  |  |  |  |
-| CSV export |  |  |  |  |
+| Accounts and privacy | Changed | Done | Authentication can be delegated without giving up privacy. | Supabase Auth replaces the Express session server so the app can run on free static hosting. |
+| Contact CRUD | Shipped | Done | Ownership must be enforced at the database boundary. | The same interface now reads and writes through Supabase with RLS. |
+| Interaction history | Shipped | Done | Parent ownership protects nested records. | Supabase policies verify ownership of each interaction's contact. |
+| Validation | Shipped | Done | Client and database checks complement each other. | Friendly browser validation remains, with PostgreSQL constraints as a second layer. |
+| Stars | Shipped | Done | A uniqueness constraint keeps toggle state consistent. | Implemented with the same user/contact junction design. |
+| Find and organize | Shipped | Done | A small personal dataset can be filtered efficiently in the browser. | Search, filters, and sorts run after the user's RLS-protected rows load. |
+| Dashboard | Shipped | Done | Derived summaries avoid a dedicated server endpoint. | Statistics and the six-month chart are calculated client-side from owned data. |
+| Follow-up reminders | Shipped | Done | Calendar-only date comparisons avoid timezone surprises. | In-app overdue, today, and seven-day categories remain unchanged. |
+| Tags | Shipped | Done | Atomic many-to-many updates are safest in a database function. | A security-invoker PostgreSQL function replaces the Express tag endpoint. |
+| CSV export | Shipped | Done | Browser-generated files remove server hosting needs. | Export is generated locally and retains spreadsheet-formula neutralization. |
