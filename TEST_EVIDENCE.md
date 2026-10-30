@@ -2,9 +2,15 @@
 
 ## Data isolation
 
-**Automated guard:** The test verifies that RLS is enabled for every private table and that ownership policies use `auth.uid()`. Removing one of those RLS statements or ownership policies fails the test.
+**Plain-English explanation:** This test reads the production database schema and verifies that Row Level Security is enabled on every private table. It also checks that the ownership policies use `auth.uid()`, the ID of the signed-in Supabase user. Together, these rules prevent User B from reading User A's contacts and make a direct request for another user's contact behave as “not found.”
 
-**Deployed acceptance test:** Create User A and User B. Add a contact as User A. User B's contact list must remain empty, and opening User A's contact hash URL must show “Contact not found.” Capture the failing screenshot from a temporary controlled policy break and a passing screenshot after restoration; never commit or leave the insecure policy active.
+**Red, then green:** For the controlled break, the `contacts` RLS-enablement statement was temporarily removed from the local schema file. The test failed because that table was no longer protected. The statement was immediately restored, and the same test passed. The broken schema was never applied to Supabase or committed.
+
+![Data-isolation test failing after the controlled RLS break](evidence/screenshots/data-isolation-red.png)
+
+![Data-isolation test passing after RLS was restored](evidence/screenshots/data-isolation-green.png)
+
+**Deployed acceptance test:** Two temporary accounts were created against the deployed Supabase project. User A created a contact; User B's list remained empty, and User A's direct contact URL displayed “Contact not found” for User B. The temporary records and accounts were removed after the check.
 
 **What would break it:** Disabling RLS or replacing an ownership policy with `using (true)` could expose another user's data.
 
