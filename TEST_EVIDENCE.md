@@ -16,8 +16,12 @@
 
 ## Dashboard summary
 
-**Automated test:** The test supplies two interactions in October 2026 and one in September 2026, then confirms that “Interactions this month” equals 2.
+**Plain-English explanation:** The test supplies two interactions in October 2026 and one in September 2026. It requests the dashboard summary for October 29 and checks that “Interactions this month” equals `2`, proving that the prior-month interaction is excluded.
+
+**Red, then green:** For the controlled break, the month filter was temporarily removed so all three interactions were counted. The test failed with “expected 3 to be 2.” The filter was restored immediately, and the same test passed.
+
+![Dashboard summary test failing after the controlled month-filter break](evidence/screenshots/dashboard-red.png)
+
+![Dashboard summary test passing after the month filter was restored](evidence/screenshots/dashboard-green.png)
 
 **What would break it:** Removing the year/month comparison would count all three interactions and fail the test.
-
-**PR evidence:** Temporarily remove the month filter, capture the failing test, restore it, rerun the test, and capture the passing result. Do not commit the intentional break.
