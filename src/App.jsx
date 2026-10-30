@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api, exportContactsCsv } from './api.js';
+import { formatMonthYear, monthToStoredDate, monthValue } from './date.js';
 
 const today = () => {
   const date = new Date();
@@ -217,7 +218,7 @@ function ContactForm({ initial = EMPTY_CONTACT, tags = [], onSubmit, submitLabel
       <Field label="Organization"><input value={values.organization || ''} onChange={(e) => update('organization', e.target.value)} maxLength="160" /></Field>
       <Field label="Role"><input value={values.role || ''} onChange={(e) => update('role', e.target.value)} maxLength="160" /></Field>
       <Field label="How or where did you meet?" className="wide"><input value={values.howMet || ''} onChange={(e) => update('howMet', e.target.value)} maxLength="300" placeholder="Haas event, introduction, class…" /></Field>
-      <Field label="Date met" error={errors.metOn}><input type="date" max={today()} value={values.metOn || ''} onChange={(e) => update('metOn', e.target.value)} /></Field>
+      <Field label="Date met" error={errors.metOn} hint="Month and year"><input type="month" max={today().slice(0, 7)} value={monthValue(values.metOn)} onChange={(e) => update('metOn', e.target.value)} /></Field>
       <Field label="Next follow-up" error={errors.nextFollowUpOn}><input type="date" value={values.nextFollowUpOn || ''} onChange={(e) => update('nextFollowUpOn', e.target.value)} /></Field>
       <fieldset className="tag-picker wide">
         <legend>Tags</legend>
@@ -244,14 +245,16 @@ function ContactEditor() {
     const contactRequest = editing ? api(`/contacts/${id}`) : Promise.resolve({ contact: EMPTY_CONTACT });
     Promise.all([contactRequest, api('/tags')]).then(([contactData, tagData]) => {
       const saved = contactData.contact;
-      setContact({ ...saved, howMet: saved.how_met || saved.howMet, metOn: String(saved.met_on || saved.metOn || '').slice(0, 10), nextFollowUpOn: String(saved.next_follow_up_on || saved.nextFollowUpOn || '').slice(0, 10), tagIds: saved.tags?.map((tag) => tag.id) || [] });
+      const storedMetOn = String(saved.met_on || saved.metOn || '').slice(0, 10);
+      setContact({ ...saved, howMet: saved.how_met || saved.howMet, metOn: monthValue(storedMetOn), originalMetOn: storedMetOn, nextFollowUpOn: String(saved.next_follow_up_on || saved.nextFollowUpOn || '').slice(0, 10), tagIds: saved.tags?.map((tag) => tag.id) || [] });
       setTags(tagData.tags);
     }).catch((e) => setMessage(e.message));
   }, [id, editing]);
   async function save(values) {
     setErrors({}); setMessage(''); setBusy(true);
     try {
-      const { tagIds = [], ...contactValues } = values;
+      const { tagIds = [], originalMetOn = '', ...contactValues } = values;
+      contactValues.metOn = monthToStoredDate(contactValues.metOn, originalMetOn);
       const data = await api(editing ? `/contacts/${id}` : '/contacts', { method: editing ? 'PATCH' : 'POST', body: contactValues });
       await api(`/contacts/${data.contact.id}/tags`, { method: 'PUT', body: { tagIds } });
       navigate(`/contacts/${data.contact.id}`);
@@ -302,7 +305,7 @@ function ContactDetail() {
     <div className="detail-grid">
       <div className="stack-lg">
         <section className="card"><CardHeading title="Relationship context" subtitle="The details to remember next time" />
-          <dl className="detail-list"><div><dt>How you met</dt><dd>{contact.how_met || 'Not added'}</dd></div><div><dt>Date met</dt><dd>{formatDate(contact.met_on)}</dd></div><div><dt>Next follow-up</dt><dd>{formatDate(contact.next_follow_up_on)}</dd></div><div className="wide"><dt>Notes</dt><dd className="notes">{contact.notes || 'No relationship notes yet.'}</dd></div></dl>
+          <dl className="detail-list"><div><dt>How you met</dt><dd>{contact.how_met || 'Not added'}</dd></div><div><dt>Date met</dt><dd>{formatMonthYear(contact.met_on)}</dd></div><div><dt>Next follow-up</dt><dd>{formatDate(contact.next_follow_up_on)}</dd></div><div className="wide"><dt>Notes</dt><dd className="notes">{contact.notes || 'No relationship notes yet.'}</dd></div></dl>
         </section>
         <section className="card"><CardHeading title="Interaction timeline" subtitle={`${contact.interactions.length} recorded ${contact.interactions.length === 1 ? 'interaction' : 'interactions'}`} action={<button className="button small primary" onClick={() => setShowInteraction(!showInteraction)}>＋ Log interaction</button>} />
           {showInteraction && <form className="inline-form" onSubmit={addInteraction}><Field label="Type" error={interactionErrors.interactionType}><select value={interaction.interactionType} onChange={(e) => setInteraction({ ...interaction, interactionType: e.target.value })}>{['Meeting','Coffee chat','Call','Message','Email','Event','Other'].map((type) => <option key={type}>{type}</option>)}</select></Field><Field label="Date" error={interactionErrors.occurredOn}><input type="date" max={today()} value={interaction.occurredOn} onChange={(e) => setInteraction({ ...interaction, occurredOn: e.target.value })} /></Field><Field label="Notes" className="wide"><textarea rows="3" maxLength="2000" value={interaction.notes} onChange={(e) => setInteraction({ ...interaction, notes: e.target.value })} /></Field><div className="wide form-actions"><button type="button" className="button ghost" onClick={() => setShowInteraction(false)}>Cancel</button><button className="button primary">Save interaction</button></div></form>}
