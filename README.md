@@ -60,5 +60,6 @@ The automated tests check the dashboard month calculation and verify that all pr
 - [`prompts/`](./prompts/) records feature prompts used with the coding agent.
 - [`TEST_EVIDENCE.md`](./TEST_EVIDENCE.md) documents the required test evidence.
 - [`REFLECTION.md`](./REFLECTION.md) contains the final implementation and stranger-test reflections.
+- [`SUBMISSION_CHECKLIST.md`](./SUBMISSION_CHECKLIST.md) is the final handoff checklist and five-minute demo script.
 
 Real contact data is entered only through the deployed interface and is never committed to this public repository.
