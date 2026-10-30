@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { dashboardSummary } from '../src/api.js';
+import { formatMonthYear, monthToStoredDate, monthValue } from '../src/date.js';
 
 const schema = readFileSync(new URL('../supabase/schema.sql', import.meta.url), 'utf8');
 
@@ -31,5 +32,17 @@ describe('dashboard summary', () => {
     }];
 
     expect(dashboardSummary(contacts, '2026-10-29').interactionsThisMonth).toBe(2);
+  });
+});
+
+describe('date met month and year', () => {
+  it('preserves an existing exact date when its month is unchanged', () => {
+    expect(monthValue('2026-10-18')).toBe('2026-10');
+    expect(monthToStoredDate('2026-10', '2026-10-18')).toBe('2026-10-18');
+  });
+
+  it('stores the first day when a new month is selected', () => {
+    expect(monthToStoredDate('2026-11', '2026-10-18')).toBe('2026-11-01');
+    expect(formatMonthYear('2026-11-01')).toBe('November 2026');
   });
 });
