@@ -275,15 +275,35 @@ function ContactDetail() {
   const [interactionErrors, setInteractionErrors] = useState({});
   const [message, setMessage] = useState('');
   const [showInteraction, setShowInteraction] = useState(false);
+  const [editingInteractionId, setEditingInteractionId] = useState(null);
   async function load() {
     try { const [contactData, tagData] = await Promise.all([api(`/contacts/${id}`), api('/tags')]); setContact(contactData.contact); setTags(tagData.tags); }
     catch (e) { setMessage(e.message); }
   }
   useEffect(() => { load(); }, [id]);
   async function toggleStar() { await api(`/contacts/${id}/star`, { method: contact.starred ? 'DELETE' : 'POST' }); setContact({ ...contact, starred: !contact.starred }); }
-  async function addInteraction(event) {
+  function closeInteractionForm() {
+    setInteraction(EMPTY_INTERACTION);
+    setEditingInteractionId(null);
+    setInteractionErrors({});
+    setShowInteraction(false);
+  }
+  function startInteraction() {
+    setInteraction(EMPTY_INTERACTION);
+    setEditingInteractionId(null);
+    setInteractionErrors({});
+    setShowInteraction(true);
+  }
+  function editInteraction(item) {
+    setInteraction({ interactionType: item.interaction_type, occurredOn: item.occurred_on, notes: item.notes || '' });
+    setEditingInteractionId(item.id);
+    setInteractionErrors({});
+    setShowInteraction(true);
+  }
+  async function saveInteraction(event) {
     event.preventDefault(); setInteractionErrors({}); setMessage('');
-    try { await api(`/contacts/${id}/interactions`, { method: 'POST', body: interaction }); setInteraction(EMPTY_INTERACTION); setShowInteraction(false); await load(); }
+    const path = editingInteractionId ? `/contacts/${id}/interactions/${editingInteractionId}` : `/contacts/${id}/interactions`;
+    try { await api(path, { method: editingInteractionId ? 'PATCH' : 'POST', body: interaction }); closeInteractionForm(); await load(); }
     catch (e) { setInteractionErrors(e.errors || {}); setMessage(e.message); }
   }
   async function removeInteraction(interactionId) { if (window.confirm('Delete this interaction?')) { await api(`/contacts/${id}/interactions/${interactionId}`, { method: 'DELETE' }); await load(); } }
@@ -307,9 +327,9 @@ function ContactDetail() {
         <section className="card"><CardHeading title="Relationship context" subtitle="The details to remember next time" />
           <dl className="detail-list"><div><dt>How you met</dt><dd>{contact.how_met || 'Not added'}</dd></div><div><dt>Date met</dt><dd>{formatMonthYear(contact.met_on)}</dd></div><div><dt>Next follow-up</dt><dd>{formatDate(contact.next_follow_up_on)}</dd></div><div className="wide"><dt>Notes</dt><dd className="notes">{contact.notes || 'No relationship notes yet.'}</dd></div></dl>
         </section>
-        <section className="card"><CardHeading title="Interaction timeline" subtitle={`${contact.interactions.length} recorded ${contact.interactions.length === 1 ? 'interaction' : 'interactions'}`} action={<button className="button small primary" onClick={() => setShowInteraction(!showInteraction)}>＋ Log interaction</button>} />
-          {showInteraction && <form className="inline-form" onSubmit={addInteraction}><Field label="Type" error={interactionErrors.interactionType}><select value={interaction.interactionType} onChange={(e) => setInteraction({ ...interaction, interactionType: e.target.value })}>{['Meeting','Coffee chat','Call','Message','Email','Event','Other'].map((type) => <option key={type}>{type}</option>)}</select></Field><Field label="Date" error={interactionErrors.occurredOn}><input type="date" max={today()} value={interaction.occurredOn} onChange={(e) => setInteraction({ ...interaction, occurredOn: e.target.value })} /></Field><Field label="Notes" className="wide"><textarea rows="3" maxLength="2000" value={interaction.notes} onChange={(e) => setInteraction({ ...interaction, notes: e.target.value })} /></Field><div className="wide form-actions"><button type="button" className="button ghost" onClick={() => setShowInteraction(false)}>Cancel</button><button className="button primary">Save interaction</button></div></form>}
-          {contact.interactions.length ? <div className="timeline">{contact.interactions.map((item) => <article key={item.id}><span className="timeline-dot" /><div><header><strong>{item.interaction_type}</strong><time>{formatDate(item.occurred_on)}</time></header><p>{item.notes || 'No notes added.'}</p></div><button className="icon-button" onClick={() => removeInteraction(item.id)} aria-label={`Delete ${item.interaction_type}`}>×</button></article>)}</div> : <EmptyState compact title="No interactions yet" body="Log the first conversation to start the relationship timeline." />}
+        <section className="card"><CardHeading title="Interaction timeline" subtitle={`${contact.interactions.length} recorded ${contact.interactions.length === 1 ? 'interaction' : 'interactions'}`} action={<button className="button small primary" onClick={startInteraction}>＋ Log interaction</button>} />
+          {showInteraction && <form className="inline-form" onSubmit={saveInteraction}><Field label="Type" error={interactionErrors.interactionType}><select value={interaction.interactionType} onChange={(e) => setInteraction({ ...interaction, interactionType: e.target.value })}>{['Meeting','Coffee chat','Call','Message','Email','Event','Other'].map((type) => <option key={type}>{type}</option>)}</select></Field><Field label="Date" error={interactionErrors.occurredOn}><input type="date" max={today()} value={interaction.occurredOn} onChange={(e) => setInteraction({ ...interaction, occurredOn: e.target.value })} /></Field><Field label="Notes" className="wide"><textarea rows="3" maxLength="2000" value={interaction.notes} onChange={(e) => setInteraction({ ...interaction, notes: e.target.value })} /></Field><div className="wide form-actions"><button type="button" className="button ghost" onClick={closeInteractionForm}>Cancel</button><button className="button primary">{editingInteractionId ? 'Save changes' : 'Save interaction'}</button></div></form>}
+          {contact.interactions.length ? <div className="timeline">{contact.interactions.map((item) => <article key={item.id}><span className="timeline-dot" /><div><header><strong>{item.interaction_type}</strong><time>{formatDate(item.occurred_on)}</time></header><p>{item.notes || 'No notes added.'}</p></div><div className="timeline-actions"><button className="button ghost small" onClick={() => editInteraction(item)}>Edit</button><button className="icon-button" onClick={() => removeInteraction(item.id)} aria-label={`Delete ${item.interaction_type}`}>×</button></div></article>)}</div> : <EmptyState compact title="No interactions yet" body="Log the first conversation to start the relationship timeline." />}
         </section>
       </div>
       <aside className="stack-lg"><section className="card"><CardHeading title="Tags" subtitle="Group this relationship" action={<Link to="/tags">Manage</Link>} />{tags.length ? <div className="check-list">{tags.map((tag) => <label key={tag.id}><input type="checkbox" checked={contact.tags.some((item) => item.id === tag.id)} onChange={(e) => assignTag(tag.id, e.target.checked)} /><span>{tag.name}</span></label>)}</div> : <p className="muted">Create a tag first to group this contact.</p>}</section>
