@@ -2,7 +2,7 @@
 
 Contact Cadence is a private relationship tracker for remembering professional contacts, recording interactions, and planning thoughtful follow-ups.
 
-**Live app:** `https://carminecostoya.github.io/contact-cadence/` after GitHub Pages is enabled.
+**Live app:** https://carminecostoya.github.io/contact-cadence/
 
 ## What it does
 
@@ -59,5 +59,6 @@ The automated tests check the dashboard month calculation and verify that all pr
 - [`schema.md`](./schema.md) explains the database and privacy rules.
 - [`prompts/`](./prompts/) records feature prompts used with the coding agent.
 - [`TEST_EVIDENCE.md`](./TEST_EVIDENCE.md) documents the required test evidence.
+- [`REFLECTION.md`](./REFLECTION.md) contains the final implementation and stranger-test reflections.
 
 Real contact data is entered only through the deployed interface and is never committed to this public repository.
